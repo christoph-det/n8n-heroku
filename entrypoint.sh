@@ -65,14 +65,11 @@ start_tailscale() {
     sleep 1
   done
 
-  # Export proxy settings for n8n to use tailnet
-  # Tailscale userspace networking provides a SOCKS5 proxy on localhost:1055
-  if [ "${TS_USE_PROXY:-true}" = "true" ]; then
-    export ALL_PROXY="socks5://localhost:1055"
-    export HTTP_PROXY="socks5://localhost:1055"
-    export HTTPS_PROXY="socks5://localhost:1055"
-    export NO_PROXY="localhost,127.0.0.1"
-    echo "Configured proxy settings for Tailscale userspace networking"
+  # Store the Tailscale IP for reference
+  TS_IP=$(tailscale $TS_GLOBAL_ARGS ip -4 2>/dev/null || echo "")
+  if [ -n "$TS_IP" ]; then
+    echo "Tailscale IP: $TS_IP"
+    export TAILSCALE_IP="$TS_IP"
   fi
 }
 
