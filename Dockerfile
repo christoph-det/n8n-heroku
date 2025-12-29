@@ -4,20 +4,11 @@ USER root
 
 ARG TAILSCALE_VERSION=1.66.4
 RUN set -eux; \
-  if command -v apk >/dev/null 2>&1; then \
-    apk add --no-cache ca-certificates curl iptables; \
-  elif command -v apt-get >/dev/null 2>&1; then \
-    apt-get update; \
-    apt-get install -y --no-install-recommends ca-certificates curl iptables; \
-    rm -rf /var/lib/apt/lists/*; \
-  else \
-    echo "Unsupported base image: missing apk/apt-get" >&2; \
-    exit 1; \
-  fi; \
-  curl -fsSL "https://pkgs.tailscale.com/stable/tailscale_${TAILSCALE_VERSION}_amd64.tgz" -o /tmp/tailscale.tgz; \
+  node -e "const https=require('https');const fs=require('fs');const url='https://pkgs.tailscale.com/stable/tailscale_${TAILSCALE_VERSION}_amd64.tgz';https.get(url,res=>{if(res.statusCode!==200){console.error('download failed',res.statusCode);process.exit(1);}const f=fs.createWriteStream('/tmp/tailscale.tgz');res.pipe(f);f.on('finish',()=>f.close());});"; \
   tar -xzf /tmp/tailscale.tgz -C /tmp; \
-  install -m 0755 "/tmp/tailscale_${TAILSCALE_VERSION}_amd64/tailscale" /usr/local/bin/tailscale; \
-  install -m 0755 "/tmp/tailscale_${TAILSCALE_VERSION}_amd64/tailscaled" /usr/local/bin/tailscaled; \
+  cp "/tmp/tailscale_${TAILSCALE_VERSION}_amd64/tailscale" /usr/local/bin/tailscale; \
+  cp "/tmp/tailscale_${TAILSCALE_VERSION}_amd64/tailscaled" /usr/local/bin/tailscaled; \
+  chmod 0755 /usr/local/bin/tailscale /usr/local/bin/tailscaled; \
   rm -rf /tmp/tailscale*;
 
 WORKDIR /home/node/packages/cli
