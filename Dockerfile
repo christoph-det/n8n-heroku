@@ -9,7 +9,8 @@ RUN set -eux; \
   cp "/tmp/tailscale_${TAILSCALE_VERSION}_amd64/tailscale" /usr/local/bin/tailscale; \
   cp "/tmp/tailscale_${TAILSCALE_VERSION}_amd64/tailscaled" /usr/local/bin/tailscaled; \
   chmod 0755 /usr/local/bin/tailscale /usr/local/bin/tailscaled; \
-  rm -rf /tmp/tailscale*;
+  rm -rf /tmp/tailscale*; \
+  mkdir -p /var/lib/tailscale /var/run/tailscale /tmp/tailscale;
 
 WORKDIR /home/node/packages/cli
 ENTRYPOINT []

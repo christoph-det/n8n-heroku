@@ -51,6 +51,29 @@ start_tailscale() {
   echo "Bringing Tailscale up"
   # shellcheck disable=SC2086
   tailscale $TS_GLOBAL_ARGS up $TS_UP_ARGS || echo "tailscale up failed; continuing without it"
+
+  # Wait for Tailscale to be fully connected
+  echo "Waiting for Tailscale connection..."
+  i=0
+  while [ $i -lt 30 ]; do
+    if tailscale $TS_GLOBAL_ARGS status >/dev/null 2>&1; then
+      echo "Tailscale connected successfully"
+      tailscale $TS_GLOBAL_ARGS status
+      break
+    fi
+    i=$((i + 1))
+    sleep 1
+  done
+
+  # Export proxy settings for n8n to use tailnet
+  # Tailscale userspace networking provides a SOCKS5 proxy on localhost:1055
+  if [ "${TS_USE_PROXY:-true}" = "true" ]; then
+    export ALL_PROXY="socks5://localhost:1055"
+    export HTTP_PROXY="socks5://localhost:1055"
+    export HTTPS_PROXY="socks5://localhost:1055"
+    export NO_PROXY="localhost,127.0.0.1"
+    echo "Configured proxy settings for Tailscale userspace networking"
+  fi
 }
 
 # regex function
