@@ -11,10 +11,17 @@ start_tailscale() {
   TS_STATE_DIR="${TS_STATE_DIR:-/tmp/tailscale}"
   TS_SOCKET="${TS_SOCKET:-$TS_STATE_DIR/tailscaled.sock}"
   TS_TUN="${TS_TUN:-userspace-networking}"
+  TS_SOCKS5_PORT="${TS_SOCKS5_PORT:-1055}"
+  TS_HTTP_PROXY_PORT="${TS_HTTP_PROXY_PORT:-1056}"
   mkdir -p "$TS_STATE_DIR"
 
-  echo "Starting tailscaled"
-  tailscaled --state="$TS_STATE_DIR/tailscaled.state" --socket="$TS_SOCKET" --tun="$TS_TUN" &
+  echo "Starting tailscaled with SOCKS5 proxy on port $TS_SOCKS5_PORT and HTTP proxy on port $TS_HTTP_PROXY_PORT"
+  tailscaled \
+    --state="$TS_STATE_DIR/tailscaled.state" \
+    --socket="$TS_SOCKET" \
+    --tun="$TS_TUN" \
+    --socks5-server="localhost:$TS_SOCKS5_PORT" \
+    --outbound-http-proxy-listen="localhost:$TS_HTTP_PROXY_PORT" &
 
   i=0
   while [ ! -S "$TS_SOCKET" ] && [ $i -lt 50 ]; do
@@ -71,6 +78,28 @@ start_tailscale() {
     echo "Tailscale IP: $TS_IP"
     export TAILSCALE_IP="$TS_IP"
   fi
+
+  # Set up TCP forwarding for Ollama through Tailscale
+  # TS_OLLAMA_HOST: Tailscale IP of your Ollama server (e.g., 100.78.218.38)
+  # TS_OLLAMA_PORT: Port Ollama is running on (default: 11434)
+  # TS_OLLAMA_LOCAL_PORT: Local port to bind (default: 11434)
+  if [ -n "${TS_OLLAMA_HOST:-}" ]; then
+    TS_OLLAMA_PORT="${TS_OLLAMA_PORT:-11434}"
+    TS_OLLAMA_LOCAL_PORT="${TS_OLLAMA_LOCAL_PORT:-11434}"
+    echo "Starting TCP forwarder: localhost:$TS_OLLAMA_LOCAL_PORT -> $TS_OLLAMA_HOST:$TS_OLLAMA_PORT (via Tailscale)"
+    gost -L "tcp://:$TS_OLLAMA_LOCAL_PORT/$TS_OLLAMA_HOST:$TS_OLLAMA_PORT" -F "socks5://localhost:$TS_SOCKS5_PORT" &
+    sleep 1
+    echo ""
+    echo "============================================"
+    echo "Ollama available at: http://localhost:$TS_OLLAMA_LOCAL_PORT"
+    echo "============================================"
+  fi
+
+  echo ""
+  echo "Tailscale proxy also available:"
+  echo "  SOCKS5: socks5://localhost:$TS_SOCKS5_PORT"
+  echo "  HTTP:   http://localhost:$TS_HTTP_PROXY_PORT"
+  echo ""
 }
 
 # regex function
