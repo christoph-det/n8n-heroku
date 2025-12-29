@@ -27,7 +27,8 @@ start_tailscale() {
     return 0
   fi
 
-  TS_UP_ARGS="--socket=$TS_SOCKET"
+  TS_UP_ARGS=""
+  TS_GLOBAL_ARGS="--socket=$TS_SOCKET"
   if [ -n "${TS_AUTHKEY:-}" ]; then
     TS_UP_ARGS="$TS_UP_ARGS --authkey=$TS_AUTHKEY"
   fi
@@ -49,7 +50,7 @@ start_tailscale() {
 
   echo "Bringing Tailscale up"
   # shellcheck disable=SC2086
-  tailscale up $TS_UP_ARGS || echo "tailscale up failed; continuing without it"
+  tailscale $TS_GLOBAL_ARGS up $TS_UP_ARGS || echo "tailscale up failed; continuing without it"
 }
 
 # regex function
