@@ -4,7 +4,7 @@ USER root
 
 ARG TAILSCALE_VERSION=1.92.3
 RUN set -eux; \
-  node -e "const https=require('https');const fs=require('fs');const url='https://pkgs.tailscale.com/stable/tailscale_${TAILSCALE_VERSION}_amd64.tgz';https.get(url,res=>{if(res.statusCode!==200){console.error('download failed',res.statusCode);process.exit(1);}const f=fs.createWriteStream('/tmp/tailscale.tgz');res.pipe(f);f.on('finish',()=>f.close());});"; \
+  node -e "const https=require('https');const fs=require('fs');const url='https://pkgs.tailscale.com/stable/tailscale_${TAILSCALE_VERSION}_amd64.tgz';const out='/tmp/tailscale.tgz';const get=u=>{https.get(u,res=>{if([301,302,307,308].includes(res.statusCode)&&res.headers.location){return get(res.headers.location);}if(res.statusCode!==200){console.error('download failed',res.statusCode);process.exit(1);}const f=fs.createWriteStream(out);res.pipe(f);f.on('finish',()=>f.close());});};get(url);"; \
   tar -xzf /tmp/tailscale.tgz -C /tmp; \
   cp "/tmp/tailscale_${TAILSCALE_VERSION}_amd64/tailscale" /usr/local/bin/tailscale; \
   cp "/tmp/tailscale_${TAILSCALE_VERSION}_amd64/tailscaled" /usr/local/bin/tailscaled; \
